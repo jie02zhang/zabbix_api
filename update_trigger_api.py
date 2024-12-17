@@ -22,14 +22,22 @@ def get_host_id_by_name(zabbix_api, host_name):
         logging.error(f"通过主机名获取主机ID时发生错误: {e}")
         return None, None, None
 
-def get_trigger_info(zabbix_api, host_id, host_name, host_ip, trigger_name=None):
+def get_trigger_info(zabbix_api, host_id, host_name, host_ip, trigger_name=None, trigger_value=None):
     try:
         search_params = {"description": trigger_name} if trigger_name else {}
-        triggers = zabbix_api.trigger.get(hostids=host_id, search=search_params, output=["triggerid", "description", "value", "status", "tags"])
+        triggers = zabbix_api.trigger.get(
+            hostids=host_id,
+            search=search_params,
+            output=["triggerid", "description", "value", "status", "tags"]
+        )
         logging.debug(f"从 Zabbix API 获取到的触发器信息: {triggers}")
 
         trigger_info_list = []
         for trigger in triggers:
+            # 根据 trigger_value 进行筛选
+            if trigger_value is not None and trigger.get("value") != str(trigger_value):
+                continue
+            
             tags = trigger.get("tags", [])
             tag_info = {
                 "Host Name": host_name,
@@ -57,7 +65,7 @@ def get_trigger_info(zabbix_api, host_id, host_name, host_ip, trigger_name=None)
         logging.error(f"从 Zabbix API 获取触发器信息时发生错误: {e}")
         return []
 
-def process_hosts_from_excel(file_path, zabbix_api, trigger_name=None):
+def process_hosts_from_excel(file_path, zabbix_api, trigger_name=None, trigger_value=None):
     try:
         df = pd.read_excel(file_path)
         if 'Host Name' not in df.columns:
@@ -70,7 +78,7 @@ def process_hosts_from_excel(file_path, zabbix_api, trigger_name=None):
         for host_name in host_names:
             host_id, host_name_resolved, host_ip = get_host_id_by_name(zabbix_api, host_name)
             if host_id:
-                trigger_info = get_trigger_info(zabbix_api, host_id, host_name_resolved, host_ip, trigger_name)
+                trigger_info = get_trigger_info(zabbix_api, host_id, host_name_resolved, host_ip, trigger_name, trigger_value)
                 all_trigger_info.extend(trigger_info)
 
         return all_trigger_info
@@ -91,7 +99,7 @@ def update_trigger_status(zabbix_api, trigger_id, status):
     except Exception as e:
         logging.error(f"更新触发器 ID: {trigger_id} 状态为 {status} 时发生错误: {e}")
 
-def update_triggers(zabbix_api, host_name=None, file_path=None, trigger_name=None, trigger_status=None):
+def update_triggers(zabbix_api, host_name=None, file_path=None, trigger_name=None, trigger_value=None, trigger_status=None):
     if host_name and file_path:
         logging.error("请仅输入主机名或 Excel 文件路径，不能同时输入两者")
         return
@@ -101,11 +109,11 @@ def update_triggers(zabbix_api, host_name=None, file_path=None, trigger_name=Non
         return
 
     if file_path:
-        trigger_info = process_hosts_from_excel(file_path, zabbix_api, trigger_name)
+        trigger_info = process_hosts_from_excel(file_path, zabbix_api, trigger_name, trigger_value)
     elif host_name:
         host_id, host_name_resolved, host_ip = get_host_id_by_name(zabbix_api, host_name)
         if host_id:
-            trigger_info = get_trigger_info(zabbix_api, host_id, host_name_resolved, host_ip, trigger_name)
+            trigger_info = get_trigger_info(zabbix_api, host_id, host_name_resolved, host_ip, trigger_name, trigger_value)
         else:
             trigger_info = []
 
@@ -126,9 +134,10 @@ if __name__ == "__main__":
     parser.add_argument('--host-name', type=str, help='输入主机名 (可空)')
     parser.add_argument('--file-path', type=str, help='输入 Excel 文件路径 (如果输入主机名则不需要)')
     parser.add_argument('--trigger-name', type=str, help='输入触发器名称 (可空)')
+    parser.add_argument('--trigger-value', type=int, choices=[0, 1], help='筛选触发器状态 (0: 正常, 1: 问题)')
     parser.add_argument('--trigger-status', type=int, choices=[0, 1], help='设置触发器状态 (0: 启用, 1: 禁用)')
 
     args = parser.parse_args()
     zabbix_api = login_zabbix_api()
 
-    update_triggers(zabbix_api, args.host_name, args.file_path, args.trigger_name, args.trigger_status)
+    update_triggers(zabbix_api, args.host_name, args.file_path, args.trigger_name, args.trigger_value, args.trigger_status)
