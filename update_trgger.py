@@ -70,16 +70,16 @@ def process_triggers_from_excel(file_path, trigger_name=None, monitor_key=None, 
 if __name__ == "__main__":
     # 配置参数
     FILE_PATH = "C:\\software\\hosts.xlsx"
-    TRIGGER_NAME = "NTP"  # 触发器名称（可选）
-    MONITOR_KEY = 'proc.num[,,,"/usr/sbin/ntpd"]'  # 默认监控项键
-    MONITOR_ITEM_VALUE = 1  # 筛选监控项值（如需关闭筛选，则设置为 None）
+    TRIGGER_NAME = "磁盘容量"  # 触发器名称（可选）
+    # MONITOR_KEY = 'proc.num[,,,"/usr/sbin/ntpd"]'  # 默认监控项键
+    MONITOR_ITEM_VALUE = None  # 筛选监控项值（如需关闭筛选，则设置为 None）
     TRIGGER_STATUS = 0  # 触发器状态（0: 启用, 1: 禁用）
 
     # 调用函数处理触发器
     process_triggers_from_excel(
         file_path=FILE_PATH,
         trigger_name=TRIGGER_NAME,
-        monitor_key=MONITOR_KEY,
+        # monitor_key=MONITOR_KEY,
         monitor_item_value=MONITOR_ITEM_VALUE,
         trigger_status=TRIGGER_STATUS
     )

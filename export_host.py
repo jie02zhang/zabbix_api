@@ -15,7 +15,7 @@ if zabbix_api:
     # print(filtered_hosts_info)
 
     # 导出为 Excel 文件
-    output_file = r"C:\software\应用系统监控管理-Zabbix-12.xlsx"
+    output_file = r"C:\software\应用系统监控管理-Zabbix-01.xlsx"
     df_all = pd.DataFrame(all_hosts_info)
     df_all.to_excel(output_file, index=False, sheet_name="All Hosts")
     print(f"主机信息已成功导出到 '{output_file}'")

@@ -15,13 +15,13 @@ def get_host_info(zapi: ZabbixAPI, host_name: str = None, ip_address: str = None
     :param template_name: 筛选模板名称（可选）
     :param group_name: 筛选组名称（可选）
     :param proxy_name: 筛选代理名称（可选）
-    :param return_fields: 返回的字段列表（可选，默认为 ["主机ID", "主机名称", "可见名称", "IP地址", "是否启用", "接口类型", "组信息", "模板信息", "代理信息", "Trigger ID", "Trigger Name", "Trigger 是否启用"）
+    :param return_fields: 返回的字段列表（可选，默认为 ["主机ID", "主机名称", "可见名称", "IP地址", "是否启用", "接口类型", "组信息", "模板信息", "代理信息", "Trigger ID", "Trigger Name", "Trigger 是否启用", "Tags"]）
     :return: 主机信息列表
     """
     logging.info("开始获取主机信息")
 
     # 定义默认返回字段
-    default_return_fields = ["主机ID", "主机名称", "可见名称", "IP地址", "是否启用", "接口类型", "组信息", "模板信息", "代理信息", "Trigger ID", "Trigger Name", "Trigger 是否启用"]
+    default_return_fields = ["主机ID", "主机名称", "可见名称", "IP地址", "是否启用", "接口类型", "组信息", "模板信息", "代理信息", "Trigger ID", "Trigger Name", "Trigger 是否启用", "Tags"]
     return_fields = return_fields or default_return_fields
 
     # 获取代理信息缓存
@@ -39,7 +39,8 @@ def get_host_info(zapi: ZabbixAPI, host_name: str = None, ip_address: str = None
         "selectInterfaces": ["ip", "type"],
         "selectGroups": "extend",
         "selectParentTemplates": "extend",
-        "selectTriggers": "extend"
+        "selectTriggers": "extend",
+        "selectTags": "extend"
     }
 
     if host_name:
@@ -90,6 +91,9 @@ def get_host_info(zapi: ZabbixAPI, host_name: str = None, ip_address: str = None
         # 获取主机触发器信息
         triggers = get_host_trigger_info(host)
 
+        # 获取主机 Tags 信息
+        tags = get_host_tags_info(host)
+
         for trigger in triggers:
             # 组合主机信息和触发器信息
             host_data = {
@@ -105,6 +109,7 @@ def get_host_info(zapi: ZabbixAPI, host_name: str = None, ip_address: str = None
                 "Trigger ID": trigger.get("triggerid", "未知Trigger ID"),
                 "Trigger Name": trigger.get("description", "未知Trigger Name"),
                 "Trigger 是否启用": "启用" if trigger.get("status") == "0" else "禁用",
+                "Tags": tags
             }
 
             # 仅返回需要的字段
@@ -164,6 +169,14 @@ def get_host_trigger_info(host: dict) -> list:
     if not triggers:
         return [{"Trigger ID": "N/A", "Trigger Name": "N/A", "Trigger 是否启用": "N/A"}]
     return triggers
+
+def get_host_tags_info(host: dict) -> list:
+    """
+    获取主机 Tags 信息。
+    :param host: 主机信息字典
+    :return: Tags 信息列表
+    """
+    return [{"标签": tag.get("tag", "未知标签"), "值": tag.get("value", "未知值")} for tag in host.get("tags", [])]
 
 def search_hosts_by_name(zapi: ZabbixAPI, keyword: str, return_fields: list = None) -> list:
     """
