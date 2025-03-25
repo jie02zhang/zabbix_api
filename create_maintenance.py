@@ -7,7 +7,7 @@ from login_zabbix_api import login_zabbix_api
 zapi = login_zabbix_api()
 
 # 自定义维护名称前缀，可以根据需要修改
-MAINTENANCE_NAME_PREFIX = "自定义维护名称"
+MAINTENANCE_NAME_PREFIX = "Windows维护"
 
 def get_host_id_by_ip(ip_address):
     """
